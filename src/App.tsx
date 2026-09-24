@@ -11,7 +11,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
-  // 1. Escuchar el estado de autenticación
+  // 1. Escuchar el estado de autenticación.
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user)
