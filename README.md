@@ -20,3 +20,4 @@ Si te gustara ver la página por dentro para coger inspiración o te gustaría t
 - `src/lib/`: Configuración e instancias de Supabase y Cloudinary
 - `src/pages/`: Vistas principales de la app
 - `src/services/`: Peticiones directas a BD y APIs
+- `src/types/`: Tipos generados de Supabase
