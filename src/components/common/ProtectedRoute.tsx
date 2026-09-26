@@ -2,6 +2,8 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthContext } from '../../context/AuthContext';
 
 export function ProtectedRoute() {
+
+  // Obtenemos la sesión inicial y si aún se está cargando
   const { session, loading } = useAuthContext();
 
   // Mientras Supabase verifica el token en localStorage, mostramos un estado neutro

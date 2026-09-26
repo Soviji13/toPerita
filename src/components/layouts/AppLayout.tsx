@@ -1,9 +1,18 @@
-import { NavLink } from "react-router-dom"
-
-import { Outlet } from "react-router-dom"
+import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { SendButton } from "../common/SendButton"
+import { useAuthContext } from "../../context/AuthContext";
 
 export function AppLayout () { 
+
+  // Para cerrar sesión
+  const navigate = useNavigate();
+  const { logout } = useAuthContext();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  }
+
   return (
     <main className='bg-background min-h-screen' >
 
@@ -12,7 +21,7 @@ export function AppLayout () {
         <h1 className="text-7xl">toPeritaBlog</h1>
         <div className="flex space-x-10">
           <SendButton type="button">Mi Usuario</SendButton>
-          <SendButton type="button">Cerrar sesión</SendButton>
+          <SendButton type="button" onClick={handleLogout}>Cerrar sesión</SendButton>
         </div>
       </header>
 
