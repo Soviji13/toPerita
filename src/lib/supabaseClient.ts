@@ -8,5 +8,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Faltan las variables de entorno de Supabase en .env.local')
 }
 
-// Cliente fuertemente tipado con las tablas que generaste antes
+// Cliente fuertemente tipado con las tablas que se generaron
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
