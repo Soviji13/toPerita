@@ -8,6 +8,7 @@ import { NotesPage } from "./pages/Notes/NotesPage";
 import { MapPage } from "./pages/Map/MapPage";
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import { MediaProvider } from "./context/MediaContext";
 
 export default function App () {
   return (
@@ -20,12 +21,16 @@ export default function App () {
           </Route>
 
           {/* Galería, notas y mapa */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AppLayout />}>
+            <Route element={
+              <ProtectedRoute>
+                <MediaProvider>
+                  <AppLayout />
+                </MediaProvider>
+              </ProtectedRoute>
+            }>
               <Route path="/gallery" element={<GalleryPage />}/>
               <Route path="/notes" element={<NotesPage />}/>
               <Route path="/map" element={<MapPage />}/>
-            </Route>
           </Route>
 
           {/* Por defecto */}

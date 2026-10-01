@@ -4,8 +4,10 @@ export function SendButton ({type, children, ...props}: ButtonProps) {
   return (
     <button
       {...props}
-      className="bg-auth-button mt-5 text-black" 
-      type={type}>{children}
+      className="bg-auth-button mt-5 text-black cursor-pointer" 
+      type={type}
+    >
+      {children}
     </button>
   )
 }

@@ -1,17 +1,31 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { SendButton } from "../common/SendButton"
 import { useAuthContext } from "../../context/AuthContext";
-import { useEffect } from "react";
+import { useState } from "react";
+import { UploadImgModal } from "../common/UploadImgModal";
+import { useMediaContext } from "../../context/MediaContext";
 
 export function AppLayout () { 
 
-  // Para cerrar sesión
+  // Variables iniciales necesarias
   const navigate = useNavigate();
-  const { logout } = useAuthContext();
+  const { logout, userName, role, user } = useAuthContext();
 
+  // Para cerrar sesión
   const handleLogout = async () => {
     await logout();
     navigate("/login");
+  }
+
+  // Para abrir modales
+  const [addImgModal, setAddImgModal] = useState(false);
+  const { pushOnDeleteImage, myImagesId, refreshDeleteImage } = useMediaContext();
+
+  // Gestionar quitar los modales
+  const handleCloseImgModal = () => {
+    setAddImgModal(false);
+    window.location.reload();
+
   }
 
   // Calculamos la ruta en la que estemos
@@ -22,7 +36,7 @@ export function AppLayout () {
   }
 
   const textButtonDel = {
-    "/gallery": "Eliminar imagen",
+    "/gallery": (myImagesId.length > 0 ? "Cancelar elimiación" : "Eliminar imagen"),
     "/notes": "Eliminar nota",
     "/map": "Eliminar nombre a ubicación"
   }
@@ -33,7 +47,7 @@ export function AppLayout () {
   function handleAddButton () {
     switch (location.pathname) {
       case "/gallery":
-        alert("Vas a añadir una foto");
+        setAddImgModal(true);
         return;
       case "/notes":
         alert("Vas a añadir una nota");
@@ -44,10 +58,14 @@ export function AppLayout () {
     }
   }
 
-  function handleDelButton () {
+  async function handleDelButton () {
     switch (location.pathname) {
       case "/gallery":
-        alert("Vas a eliminar una foto");
+        if (user && myImagesId.length === 0) {
+          await pushOnDeleteImage(user.id);
+        } else if (user && myImagesId.length > 0) {
+          refreshDeleteImage();
+        }
         return;
       case "/notes":
         alert("Vas a eliminar una nota");
@@ -59,21 +77,21 @@ export function AppLayout () {
   }
 
   return (
-    <main className='bg-background min-h-screen' >
+    <main className='bg-background min-h-screen min-w-screen flex flex-col items-center' >
 
       {/* Cabecera */}
-      <header className="flex min-w-screen justify-between box-border p-5">
+      <header className="flex w-95/100 justify-between box-border">
         <h1 className="text-7xl">toPeritaBlog</h1>
         <div className="flex space-x-10">
-          <SendButton type="button">Mi Usuario</SendButton>
+          <SendButton type="button">{userName} - {role}</SendButton>
           <SendButton type="button" onClick={handleLogout}>Cerrar sesión</SendButton>
         </div>
       </header>
 
       {/* Nav y botón dinámico de añadir */}
-      <div className="flex min-w-screen justify-between">
+      <div className="flex justify-between w-95/100">
         {/* Nav */}
-        <nav className="flex space-x-10 mt-4 ml-5">
+        <nav className="flex space-x-10 mt-4">
           <NavLink
             to="/gallery"
           >
@@ -100,6 +118,8 @@ export function AppLayout () {
           </SendButton>
         </div>
       </div>
+      {/* Gestionamos modales */}
+      <UploadImgModal isOpen={addImgModal} onClose={handleCloseImgModal} />
       <Outlet />
     </main>
   )

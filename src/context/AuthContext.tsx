@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import { authService } from '../services/auth.service';
+import { userService } from '../services/user.service';
 
 /**
  * Este Script guarda el contexto global que necesita el frontend en todo momento
@@ -15,8 +16,11 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  userName: String | null;
+  role: String | null;
   logout: () => Promise<void>;
 }
+
 
 // Creamos un contexto vacío, que además de almacenar lo definido, también
 // almacena lo que devuelve createContext (un componente Provider y más cosas)
@@ -25,6 +29,8 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   logout: async () => {},
+  role: null,
+  userName: null
 });
 
 // Como entrada se reciben componentes de react
@@ -34,6 +40,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+
+  // Función auxiliar para poner nombre de usuario y rol
+  async function setUserNameAndRole (userId: string) {
+    try {
+      const { userName: publicUserName, role: publicRole } = await (userService.getPublicUser(userId)) ?? {};
+      if (publicUserName && publicRole) {
+        setUserName(publicUserName);
+        setRole(publicRole);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   // Declaramos función logout 
   const logout = async () => {
@@ -42,9 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error cerrando sesión en Supabase:", error);
     } finally {
-      // Quitamos la sesión y el usuario
+      // Quitamos la sesión y los datos del usuario
       setSession(null);
       setUser(null);
+      setRole(null);
+      setUserName(null);
     }
   }
 
@@ -66,14 +89,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
 
         // Intentamos obtener la sesión actual
-        const { data, error } = await supabase.auth.getSession();
+        const { data: authData, error: authError } = await supabase.auth.getSession();
 
-        if (error) throw error;
+        if (authError)  console.error(authError);
 
         // Si isMounted, guardamos la sesión y el usuario (si hay)
         if (isMounted) {
-          setSession(data.session);
-          setUser(data.session?.user ?? null);
+          setSession(authData.session);
+          setUser(authData?.session?.user ?? null);
+
+          if (authData?.session?.user?.id) {
+            await setUserNameAndRole(authData.session.user.id);
+          } else {
+            setUserName(null);
+            setRole(null);
+          }
         }
       } catch (err) {
         console.error('Error al verificar sesión inicial:', err);
@@ -106,12 +136,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      * veamos necesario con estos (onAuthState es una función CallBack)
      * 
      */
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange( async (_event, currentSession) => {
       // Si el componente está montado, almacenamos la sesión real y el usuario. Quitamos la carga
       if (isMounted) {
         setSession(currentSession);              // CurrentSession contiene el token de acceso, nuevos tokens, cuándo expira y el usuario
         setUser(currentSession?.user ?? null);
         setLoading(false);
+
+        if (currentSession?.user?.id) {
+          await setUserNameAndRole(currentSession.user.id);
+        } else {
+          setUserName(null);
+          setRole(null);
+        }
       }
     });
 
@@ -126,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * Devolvemos el provider del AuthContext, que emite los datos de value a los hijos
    */
   return (
-    <AuthContext.Provider value={{ user, session, loading, logout}}>
+    <AuthContext.Provider value={{ user, session, loading, logout, role, userName}}>
       {children}
     </AuthContext.Provider>
   );

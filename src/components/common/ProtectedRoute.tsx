@@ -1,7 +1,8 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/AuthContext';
+import type { ReactNode } from 'react';
 
-export function ProtectedRoute() {
+export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   // Obtenemos la sesión inicial y si aún se está cargando
   const { session, loading } = useAuthContext();
@@ -21,5 +22,5 @@ export function ProtectedRoute() {
   }
 
   // Si la sesión existe, renderiza las pantallas hijas
-  return <Outlet />;
+  return (<>{children}</>);
 }

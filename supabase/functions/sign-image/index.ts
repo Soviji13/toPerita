@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 
+
 /**
  * Desde el backend le damos permisos a cualquiera para acceder a este end-point
  * 
@@ -16,6 +17,7 @@ import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, OPTIONS"
 };
 
 /**
@@ -97,21 +99,52 @@ serve (async (req) => {
 
     // Si se han podido obtener los datos
 
-    // Parámetro de expiración: válida durante 1 hora 
-    const timestamp = Math.floor(Date.now() / 1000);
-    const expiration = timestamp + 3600;
+    // Debemos verificar que el usuario es el legítimo
+
+    // Obtenemos el id del usuario asociado a la imagen que quiere borrar
+    const { data: imgRecord } = await supabaseClient
+      .from("images")
+      .select("user_id")
+      .eq("cloudinary_public_id", publicId)
+      .single();
+
+    // Bloqueamos la función a no ser que el usuario sea administrador
+    if (imgRecord && imgRecord.user_id !== user.id) {
+
+      const { data: profile } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+
+      if (profile?.role !== "admin") {
+        return new Response(JSON.stringify({ error: "No tienes permiso para eliminar la imagen" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json"},
+        })
+      }
+    }
 
     // Firma criptográfica HMAC-SHA1 que exige Cloudinary para URLs autenticadas
-    const toSign = `public_id=${publicId}&timestamp=${expiration}${apiSecret}`;
+    const toSign = `${publicId}${apiSecret}`;
+
     const encoder = new TextEncoder();
     const data = encoder.encode(toSign);
     const hashBuffer = await crypto.subtle.digest("SHA-1", data);
-    const signature = Array.from(new Uint8Array(hashBuffer))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+
+    const hashArray = new Uint8Array(hashBuffer);
+    let binary = "";
+    for (let i = 0; i < hashArray.byteLength; i++) {
+      binary += String.fromCharCode(hashArray[i]);
+    }
+
+    const base64Signature = btoa(binary)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .slice(0, 8);
 
     // Construir la URL privada temporal con formato 'authenticated'
-    const signedUrl = `https://res.cloudinary.com/${cloudName}/image/authenticated/s--${signature.slice(0, 8)}--/t_${expiration}/${publicId}`;
+    const signedUrl = `https://res.cloudinary.com/${cloudName}/image/authenticated/s--${base64Signature}--/${publicId}`;
 
     // Devolvemos la url
     return new Response(JSON.stringify({ signedUrl }), {

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       images: {
@@ -19,7 +44,6 @@ export type Database = {
           cloudinary_public_id: string
           created_at: string | null
           id: string
-          img_url: string
           multimedia: string | null
           title: string
           user_id: string | null
@@ -28,7 +52,6 @@ export type Database = {
           cloudinary_public_id: string
           created_at?: string | null
           id?: string
-          img_url: string
           multimedia?: string | null
           title: string
           user_id?: string | null
@@ -37,7 +60,6 @@ export type Database = {
           cloudinary_public_id?: string
           created_at?: string | null
           id?: string
-          img_url?: string
           multimedia?: string | null
           title?: string
           user_id?: string | null
@@ -442,6 +464,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
